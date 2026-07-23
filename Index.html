@@ -71,6 +71,59 @@ margin-bottom:10px;
 font-size:30px;
 }
 
+.quick-overview{
+margin-bottom:30px;
+}
+
+.quick-overview-title{
+font-size:15px;
+color:#aaa;
+margin-bottom:12px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+
+.quick-overview-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:12px;
+}
+
+.quick-chip{
+background:rgba(255,255,255,0.05);
+border:1px solid rgba(255,255,255,0.08);
+border-radius:16px;
+padding:14px 16px;
+cursor:pointer;
+transition:0.2s;
+}
+
+.quick-chip:hover{
+transform:translateY(-2px);
+border-color:rgba(255,179,71,0.4);
+}
+
+.quick-chip-name{
+font-size:14px;
+color:#ddd;
+margin-bottom:6px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+
+.quick-chip-balance{
+font-size:19px;
+font-weight:700;
+}
+
+.quick-empty{
+color:#777;
+font-size:14px;
+padding:10px 0;
+}
+
 .section{
 background:rgba(255,255,255,0.05);
 padding:25px;
@@ -240,6 +293,13 @@ padding:18px;
 
 <div class="header">
 <div class="logo">Fund Holding Ledger</div>
+</div>
+
+<div class="quick-overview">
+<div class="quick-overview-title">
+<span>Quick Customer Overview</span>
+</div>
+<div class="quick-overview-grid" id="quickOverviewContainer"></div>
 </div>
 
 <div class="dashboard">
@@ -522,6 +582,45 @@ function renderCustomerDropdown() {
     });
 }
 
+function scrollToCustomer(customerId) {
+    const target = document.getElementById(`customer-${customerId}`);
+    if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
+
+function renderQuickOverview(customerList, ledgerList) {
+    const container = document.getElementById("quickOverviewContainer");
+    container.innerHTML = "";
+
+    if (customerList.length === 0) {
+        container.innerHTML = `<div class="quick-empty">Abhi koi customer add nahi hua hai.</div>`;
+        return;
+    }
+
+    customerList.forEach(customer => {
+        const customerLedger = ledgerList.filter(t => t.customer_id == customer.id);
+
+        let balance = 0;
+        customerLedger.forEach(t => {
+            if (t.type === "deposit") {
+                balance += t.amount;
+            } else {
+                balance -= t.amount;
+            }
+        });
+
+        const chip = document.createElement("div");
+        chip.className = "quick-chip";
+        chip.onclick = () => scrollToCustomer(customer.id);
+        chip.innerHTML = `
+            <div class="quick-chip-name">${customer.name}</div>
+            <div class="quick-chip-balance" style="color:${balance >= 0 ? '#4cd137' : '#ff6b6b'}">₹${balance}</div>
+        `;
+        container.appendChild(chip);
+    });
+}
+
 function renderCustomers() {
     const container = document.getElementById("customersContainer");
     container.innerHTML = "";
@@ -533,6 +632,8 @@ function renderCustomers() {
     // Data handling as arrays
     const customerList = Array.isArray(customers) ? customers : [];
     const ledgerList = Array.isArray(ledger) ? ledger : [];
+
+    renderQuickOverview(customerList, ledgerList);
 
     customerList.forEach(customer => {
         const customerLedger = ledgerList.filter(t => t.customer_id == customer.id);
@@ -557,6 +658,7 @@ function renderCustomers() {
 
         const box = document.createElement("div");
         box.className = "customer-box";
+        box.id = `customer-${customer.id}`;
         box.innerHTML = `
         <div class="customer-top">
             <div>
